@@ -302,7 +302,7 @@ impl<B: UsbBus> InBuf<'_, B> {
                     self.buffer.clear();
                     Ok(())
                 }
-                Err(UsbError::WouldBlock) => return Err(UsbError::WouldBlock),
+                Err(UsbError::WouldBlock) => Err(UsbError::WouldBlock),
                 Err(e) => {
                     self.buffer.clear();
                     Err(e)
@@ -316,7 +316,7 @@ impl<B: UsbBus> InBuf<'_, B> {
                 Ok(_) | Err(UsbError::WouldBlock) => Err(UsbError::WouldBlock),
                 Err(err) => {
                     self.buffer.clear();
-                    return Err(err);
+                    Err(err)
                 }
             }
         } else {
@@ -330,7 +330,7 @@ impl<B: UsbBus> InBuf<'_, B> {
                     self.buffer.clear();
                     Ok(())
                 }
-                Err(UsbError::WouldBlock) => return Err(UsbError::WouldBlock),
+                Err(UsbError::WouldBlock) => Err(UsbError::WouldBlock),
                 Err(e) => {
                     self.buffer.clear();
                     Err(e)
@@ -372,10 +372,10 @@ impl<B: UsbBus> OutBuf<'_, B> {
         self.datagram_len = None;
         self.buffer.clear();
 
-        match self.read_packet() {
-            Err(UsbError::WouldBlock) | Ok(()) => Ok(result),
-            Err(e) => Err(e),
-        }
+        // The consumer has already processed this frame. A failure while
+        // fetching the next packet must not turn that delivery into an error.
+        // The next can_read() call advances the OUT endpoint instead.
+        Ok(result)
     }
 
     /// Reads a single packet from the OUT endpoint.
@@ -927,3 +927,6 @@ impl<B: UsbBus> phy::TxToken for EthernetTxToken<'_, '_, B> {
             .unwrap()
     }
 }
+
+#[cfg(test)]
+mod tests;
