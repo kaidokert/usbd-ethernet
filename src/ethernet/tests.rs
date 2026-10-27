@@ -99,3 +99,10 @@ fn malformed_next_ntb_does_not_panic_after_delivery() {
 fn next_usb_read_error_does_not_panic_after_delivery() {
     consumed_frame_survives_next_error(Err(UsbError::InvalidState));
 }
+
+#[test]
+fn short_ntb_header_after_delivery_does_not_read_stale_bytes() {
+    for length in 0..12 {
+        consumed_frame_survives_next_error(Ok(ntb(*b"bad!")[..length].to_vec()));
+    }
+}

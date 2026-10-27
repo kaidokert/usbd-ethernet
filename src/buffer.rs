@@ -68,6 +68,11 @@ impl<'a, const LEN: usize> RWBuffer<'a, LEN> {
         len: usize,
         f: impl FnOnce(&mut [u8]) -> Result<(usize, R)>,
     ) -> Result<(usize, R)> {
+        // Allocated storage can still contain a previous transfer's bytes.
+        // Only the initialized, unread portion belongs to this transfer.
+        if len > self.unread() {
+            return Err(UsbError::InvalidState);
+        }
         let Some(buf) = self.store.get_mut(self.read_ptr..self.read_ptr + len) else {
             #[cfg(feature = "defmt")]
             defmt::error!("buffer: tried to read more data than available");
